@@ -1,0 +1,23 @@
+# environment
+.env
+.venv/
+__pycache__/
+*.pyc
+
+# data never goes in git -- it's regenerated from --seed
+data/
+*.csv
+*.parquet
+*.dump
+
+# dbt (Phase 1)
+transform/target/
+transform/dbt_packages/
+transform/logs/
+transform/profiles.yml
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

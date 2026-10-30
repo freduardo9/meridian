@@ -1,0 +1,68 @@
+# Phase 0 -- Postgres source database + the generator that seeds it.
+#
+#   make up      start Postgres
+#   make seed    (re)build the generator image and seed ~10M rows
+#
+# One compose file per phase. `make down` before starting another phase's stack.
+
+name: meridian
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: meridian-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-meridian}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-meridian}
+      POSTGRES_DB: ${POSTGRES_DB:-meridian}
+      TZ: UTC
+      PGTZ: UTC
+    command:
+      - postgres
+      # Phase 3 (Debezium CDC) needs logical replication. Turning it on now
+      # means the source never has to be rebuilt for it.
+      - -c
+      - wal_level=logical
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
+      # Sized for a laptop: enough to make a 10M-row bulk load comfortable.
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - maintenance_work_mem=256MB
+      - -c
+      - max_wal_size=4GB
+    ports:
+      # 5433 on the host so it never collides with a locally installed Postgres.
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      # A named volume, not a bind mount: Postgres on a Windows bind mount is
+      # slow and has permission problems.
+      - pgdata:/var/lib/postgresql/data
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+
+  generator:
+    build:
+      context: ../../generator
+    image: meridian-generator:latest
+    profiles: ["seed"]          # never starts on `up`; only via `make seed`
+    environment:
+      MERIDIAN_DSN: postgresql://${POSTGRES_USER:-meridian}:${POSTGRES_PASSWORD:-meridian}@postgres:5432/${POSTGRES_DB:-meridian}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+    name: meridian_pgdata

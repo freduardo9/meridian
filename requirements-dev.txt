@@ -1,0 +1,8 @@
+# Local tooling, installed into ~/.venvs/meridian by `make venv`.
+# (The generator's own dependencies live in generator/requirements.txt and run in Docker.)
+#
+# dbt Core v1.12, not dbt v2: v2 (the Rust rewrite, Sept 2026) has no Postgres
+# adapter. 1.12 is in active support until July 2027, and the concepts --
+# ref(), the DAG, staging/intermediate/marts, tests, snapshots -- carry over to v2 unchanged.
+dbt-core>=1.12,<1.13
+dbt-postgres>=1.11,<1.12

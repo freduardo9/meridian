@@ -1,0 +1,5 @@
+# The repo lives on Windows but everything runs in Linux containers.
+# Force LF so shell scripts, Makefile and SQL don't break with CRLF.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
